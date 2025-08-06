@@ -6,7 +6,7 @@
 #include<sys/types.h>
 #include<sys/wait.h>
 
-int main (int argc,char *args[]){
+int main (){
     pid_t pid;
     int status;
     int array[]={2,4,1,3,8,7,9,6,5};

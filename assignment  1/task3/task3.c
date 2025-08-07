@@ -17,18 +17,18 @@ int main (){
     b=fork();
     c=fork();
 
-    if (a>0 && b>0 && c>0){  //parent
+    /*if (a>0 && b>0 && c>0){  //parent
         // parent process
-        while (wait(NULL) > 0);
+       // wait(NULL);
 
-        int number = 0;
+        int number;
         file = fopen("counter.txt", "r");
         fscanf(file, "%d", &number);
         printf("Final count: %d\n", number);
         fclose(file);
-    }
+    }*/
 
-    else if (a>0 && b==0 && c>0){
+    if (a>0 && b==0 && c>0){
         if (getpid()%2!=0){
 
             int number;
@@ -39,6 +39,7 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
     else if (a>0 && b==0 && c==0){
@@ -53,6 +54,7 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
     else if (a>0 && b>0 && c==0){
@@ -67,6 +69,7 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
     else if (a==0 && b>0 && c>0){
@@ -80,6 +83,7 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
     else if (a==0 && b==0 && c>0){
@@ -92,6 +96,7 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
     else if (a==0 && b==0 && c==0){
@@ -104,6 +109,7 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
     else if (a==0 && b>0 && c==0){
@@ -116,6 +122,18 @@ int main (){
             file = fopen("counter.txt", "w");
             fprintf(file,"%d",number);
             fclose(file);
+            fork();
         }
     }
+     else if (a>0 && b>0 && c>0){  //parent
+        // parent process
+       wait(NULL);
+
+        int number;
+        file = fopen("counter.txt", "r");
+        fscanf(file, "%d", &number);
+        printf("Final count: %d\n", number);
+        fclose(file);
+    }
+    return 0;
 }

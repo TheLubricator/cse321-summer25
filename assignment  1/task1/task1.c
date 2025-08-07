@@ -7,7 +7,7 @@ int main (int argc,char *args[]){
     int fd;
     FILE *fp;
 
-    fd=open(args[1],O_CREAT|O_WRONLY);
+    fd=open(args[1],O_CREAT|O_WRONLY,0644);
 
 
     while(true){

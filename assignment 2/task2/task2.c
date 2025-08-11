@@ -25,15 +25,15 @@ int random_number_return(int min, int max){
 }
 
 int main(){
-    srand(time(NULL));
+    srand(time(NULL)); //for randomizing random number
     pthread_t students[10];
     pthread_t st;
-    sem_init(&student_chair,0,3);
-    sem_init(&student_wait,0,0);
-    sem_init(&st_avail,0,1);
+    sem_init(&student_chair,0,3); //represents 3 chairs
+    sem_init(&student_wait,0,0); //st sleep representtation
+    sem_init(&st_avail,0,1); //st can only consult one student at a time
     pthread_create(&st,NULL,*st_thread,NULL);
     for (int i=0;i<10;i++){
-        sleep(random_number_return(0,3));
+
         pthread_create(&students[i],NULL,*student_thread,&student_ids[i]);
 
     }
@@ -51,7 +51,7 @@ void *st_thread(void *args){
         sem_wait(&student_wait);
         sem_wait(&st_avail);
         printf("A waiting student started getting consultation\n");
-        printf("Number of students now waiting: %d\n",waiting);
+
         printf("ST now giving consultation,\n");
         int current_id = chairs_array[chairs_array_idx_st];
         printf("Student %d started getting consultation\n", current_id);
@@ -65,8 +65,10 @@ void *st_thread(void *args){
         chairs_array[chairs_array_idx_st]=-1;
         chairs_array_idx_st=(chairs_array_idx_st+1)%3;
         waiting--;
+        printf("Number of students now waiting: %d\n",waiting);
         sem_post(&student_chair);
         pthread_mutex_unlock(&mutex_waiting);
+        printf("Student %d finished getting consultation and left\n", current_id);
         sem_post(&st_avail);
 
 
@@ -78,6 +80,7 @@ void *st_thread(void *args){
 
 void *student_thread(void *args){
     int *student_id=(int *)args;
+    sleep(random_number_return(0,8));
     pthread_mutex_lock(&mutex_waiting);
     if (waiting>=3){
             printf("No chairs remaining in lobby. Student %d is leaving...\n",*student_id);

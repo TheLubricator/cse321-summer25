@@ -80,7 +80,7 @@ void *st_thread(void *args){
 
 void *student_thread(void *args){
     int *student_id=(int *)args;
-    sleep(random_number_return(0,8));
+    sleep(random_number_return(0,8)); //to ensure threads randomly  enter queue instead of sequential 0 to 9
     pthread_mutex_lock(&mutex_waiting);
     if (waiting>=3){
             printf("No chairs remaining in lobby. Student %d is leaving...\n",*student_id);

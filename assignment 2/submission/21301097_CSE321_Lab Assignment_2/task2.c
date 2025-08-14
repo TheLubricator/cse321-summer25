@@ -31,6 +31,7 @@ int main(){
     sem_init(&student_chair,0,3); //represents 3 chairs
     sem_init(&student_wait,0,0); //st sleep representtation
     sem_init(&st_avail,0,1); //st can only consult one student at a time
+    pthread_mutex_init(&mutex_waiting,NULL);
     pthread_create(&st,NULL,*st_thread,NULL);
     for (int i=0;i<10;i++){
 

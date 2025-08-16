@@ -26,11 +26,12 @@ int main(){
 	}
 
 	printf("Read:\n");
-	if(msgrcv(msg_id,(void *)&r_data,sizeof(r_data.txt),-4,IPC_NOWAIT)<0){
+	if(msgrcv(msg_id,(void *)&r_data,sizeof(r_data),-4,IPC_NOWAIT)<0){
 		perror("Error");
 	}
 
 	printf("Data received:\n%s\n",r_data.txt);
+	printf("Data received:\n%ld\n",r_data.type);
 
 	msgctl(msg_id,IPC_RMID,0);
 

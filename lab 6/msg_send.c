@@ -27,7 +27,7 @@ int main(){
 	read(0,buff,sizeof(buff));
 	s_data.type=2;
 	strcpy(s_data.txt,buff);
-	snt=msgsnd(msg_id,(void *)&s_data,sizeof(s_data.txt),0);
+	snt=msgsnd(msg_id,(void *)&s_data,sizeof(s_data),0);
 	if(snt==-1){
 		printf("Error\n");
 	}

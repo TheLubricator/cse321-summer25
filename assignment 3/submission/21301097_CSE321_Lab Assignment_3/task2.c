@@ -16,7 +16,7 @@ int main(){
     //login
     pid_t otp;
     struct msg s_data;
-    char workspace_name[6];
+    char workspace_name[7];
     int msg_id_login2otp,msg_id_mail2login,msg_id_otp2login,msg_id_otp2mail;
     int sent_login2otp;
     // char pidd [100];
@@ -24,11 +24,14 @@ int main(){
     // printf("%s",pidd);
     printf("Please enter workspace name: \n");
     read(0,workspace_name,sizeof(workspace_name));
+    workspace_name[6]='\0';
+
     if (strcmp(workspace_name,"cse321")!=0){
         printf("Invalid workspace name.\n");
         return 0;
     }
-    printf("Workspace name sent to OTP Generator from login: %s\n\n",workspace_name);
+    strcpy(s_data.text,workspace_name);
+    printf("Workspace name sent to OTP Generator from login: %s\n",s_data.text);
     strcpy(s_data.text,workspace_name);
     s_data.type=1;
     msg_id_login2otp=msgget((key_t)12,0666|IPC_CREAT);
@@ -47,6 +50,9 @@ int main(){
         printf("Log in received OTP from mail: %s\n\n",r_data_mail2login.text);
         if (strcmp(r_data_otp2login.text,r_data_mail2login.text)==0){
             printf("OTP Verified.\n\n");
+        }
+        else{
+            printf("OTP not matched.\n\n");
         }
          msgctl(msg_id_login2otp,IPC_RMID,0);
          msgctl(msg_id_mail2login,IPC_RMID,0);

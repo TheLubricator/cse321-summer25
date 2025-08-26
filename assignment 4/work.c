@@ -97,7 +97,7 @@ void checkCapabilityAccess(CapabilityUser *user, const char *resourceName,int pe
                 printPermissions(perm);
                 printf(" on %s: Access GRANTED\n", user->capabities[i].resource);
             } else {
-                printf("Capability Check: User %s requests ", user->capabities[i].resource);
+                printf("Capability Check: User %s requests ", user->name);
                 printPermissions(perm);
                 printf(" on %s: Access DENIED\n", user->capabities[i].resource);
             }

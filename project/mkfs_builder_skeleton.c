@@ -202,12 +202,8 @@ inode_t inode;
 dirent64_t dirent;
 
 /* proper configuration of the structures */
-
-superblock_crc_finalize(&superblock);
-inode_crc_finalize(&inode);
-dirent_checksum_finalize(&dirent);
-uint64_t total_blocks = (input_total_size * 1024) / BS; // BS is 4096 (block size)
-size_t image_size = total_blocks * BS; // Total bytes needed for the image
+uint64_t total_blocks = (input_total_size * 1024) / BS; 
+size_t image_size = input_total_size * 1024; // img size  in byetts
 uint8_t *image_buffer = malloc(image_size); // Allocate memory for the entire image
 if (!image_buffer) {
     fprintf(stderr, "Error: Failed to allocate memory for image of size %zu bytes\n", image_size);
@@ -215,7 +211,37 @@ if (!image_buffer) {
 }
 memset(image_buffer, 0, image_size); // Zero-initialize the buffer
 // ... (subsequent steps will populate image_buffer)
+
 // Don't forget to free(image_buffer) after writing to file
+superblock.magic=0x4D565346;
+superblock.version=1;
+superblock.block_size=BS;
+superblock.total_blocks=total_blocks;
+superblock.inode_count=input_inode_size;
+
+superblock.inode_bitmap_start=1;
+superblock.inode_bitmap_blocks=1;
+superblock.data_bitmap_start=2;
+superblock.data_bitmap_blocks=1;
+superblock.inode_table_start=3;
+superblock.inode_table_blocks=(input_inode_size*INODE_SIZE)/BS;
+superblock.data_region_start=superblock.inode_table_start+superblock.inode_table_blocks;
+superblock.data_region_blocks=total_blocks-superblock.data_region_start;
+superblock.root_inode=ROOT_INO;
+superblock.mtime_epoch=(uint64_t)time(NULL);
+superblock.flags=0;
+superblock.checksum=0;
+superblock_crc_finalize(&superblock);
+memcpy(image_buffer+0*BS, &superblock, sizeof(superblock_t));
+superblock_t *retrieved1 = (superblock_t*)((char*)image_buffer + 0);
+printf("Superblock Magic: 0x%X\n", retrieved1->magic);
+printf("Superblock Version: %u\n", retrieved1->version);
+printf("Superblock Block Size: %u\n", retrieved1->block_size);
+printf("Superblock Total Blocks: %" PRIu64 "\n", retrieved1->total_blocks);
+printf("Superblock Inode Count: %" PRIu64 "\n", retrieved1->inode_count);
+printf("Superblock Checksum: 0x%X\n", retrieved1->checksum);
+
+
 
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS

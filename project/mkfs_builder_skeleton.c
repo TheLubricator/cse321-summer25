@@ -9,6 +9,7 @@
 #include <time.h>
 #include <assert.h>
 #include <limits.h>
+#include <unistd.h>
 
 #define BS 4096u               // block size
 #define INODE_SIZE 128u
@@ -159,6 +160,14 @@ int CLI_validate(int argc, char *argv[]) {
         printf("invalid format, correct: %s --image <output image> --inode <inode size> --size--kib <block size>\n", argv[0]);
         return 5;
     }
+    else if (strcmp(argv[2],"out.img")!=0) {
+        printf("invalid output file name. Must be named out.img.\n");
+        return 5;
+    }
+    else if (strcmp(argv[1],"--image")!=0 || strcmp(argv[3],"--inode")!=0 || strcmp(argv[5],"--size-kib")!=0) {
+        printf("invalid format, correct: %s --image <output image> --inode <inode size> --size-kib <block size>\n", argv[0]);
+        return 5;
+    }
     return 0;
 }
 int Check_Valid_Values(int inode_size, int block_size) {
@@ -198,7 +207,6 @@ int main(int argc, char *argv[]) {
     }
     printf("Inode count: %d, total img size: %d\n", input_inode_size, input_total_size);
    superblock_t superblock;
-inode_t inode;
 dirent64_t dirent;
 
 /* proper configuration of the structures */
@@ -233,20 +241,203 @@ superblock.flags=0;
 superblock.checksum=0;
 superblock_crc_finalize(&superblock);
 memcpy(image_buffer+0*BS, &superblock, sizeof(superblock_t));
-superblock_t *retrieved1 = (superblock_t*)((char*)image_buffer + 0);
-int j=retrieved1->block_size;
-printf("Superblock Magic: 0x%X\n", retrieved1->magic);
-printf("Superblock Version: %u\n", retrieved1->version);
-printf("Superblock Block Size: %d\n", j);
-printf("Superblock Total Blocks: %" PRIu64 "\n", retrieved1->total_blocks);
-printf("Superblock Inode Count: %" PRIu64 "\n", retrieved1->inode_count);
-printf("Superblock Checksum: 0x%X\n", retrieved1->checksum);
+//test during coding to find errors
+// superblock_t *retrieved1 = (superblock_t*)((char*)image_buffer + 0);
+// int j=retrieved1->block_size;
+// printf("Superblock Magic: 0x%X\n", retrieved1->magic);
+// printf("Superblock Version: %u\n", retrieved1->version);
+// printf("Superblock Block Size: %d\n", j);
+// printf("Superblock Total Blocks: %" PRIu64 "\n", retrieved1->total_blocks);
+// printf("Superblock Inode Count: %" PRIu64 "\n", retrieved1->inode_count);
+// printf("Superblock Checksum: 0x%X\n", retrieved1->checksum);
+//Allocate inode bitmap  block 1
+uint8_t inode_bitmap[BS];
+memset(inode_bitmap, 0, BS);
+inode_bitmap[0] = 0b00000001; 
+memcpy(image_buffer + superblock.inode_bitmap_start * BS, inode_bitmap, BS);
+//Allocate data bitmap block 2
+uint8_t data_bitmap[BS];
+memset(data_bitmap, 0, BS);
+data_bitmap[0] = 0b00000001; 
+memcpy(image_buffer + superblock.data_bitmap_start * BS, data_bitmap, BS);
+
+//root  indoe time
+// inode.mode = 0x4000 | 0x1FF; // directory with 0777 permissions
 
 
 
+// uint8_t *inode_bitmap_retrieve = (uint8_t*)((char*)image_buffer + superblock.inode_bitmap_start * BS);
+// uint8_t *data_bitmap_array_test = (uint8_t*)((char*)image_buffer+superblock.data_bitmap_start * BS);
+// printf("Inode bitmap first byte: 0b%08b\n", inode_bitmap_retrieve[0]);
+// printf("Data bitmap first byte: 0b%08b\n", data_bitmap_array_test[0]);
+
+inode_t inode_table[superblock.inode_count];
+memset(inode_table, 0, superblock.inode_count*INODE_SIZE);
+inode_table[0].mode = (0040000); 
+inode_table[0].links = 2;
+inode_table[0].uid = 0;
+inode_table[0].gid = 0;
+inode_table[0].size_bytes = 128;
+inode_table[0].atime = (uint64_t)time(NULL);
+inode_table[0].ctime = (uint64_t)time(NULL);
+inode_table[0].mtime = (uint64_t)time(NULL);
+inode_table[0].direct[0] = superblock.data_region_start;
+inode_table[0].proj_id = 2;
+inode_table[0].uid16_gid16 = 0;
+inode_table[0].xattr_ptr = 0;
+inode_table[0].reserved_0 = 0;
+inode_table[0].reserved_1 = 0;
+inode_table[0].reserved_2 = 0;
+inode_crc_finalize(&inode_table[0]);
+memcpy(image_buffer + superblock.inode_table_start * BS, inode_table, superblock.inode_count * INODE_SIZE);
+
+
+// inode_t *retrieved_inode = (inode_t*)((char*)image_buffer + superblock.inode_table_start * BS);
+// printf("Root Inode Mode: 0%o\n", retrieved_inode[0].mode);
+// printf("Root Inode Size: %" PRIu64 " bytes\n", retrieved_inode[0].size_bytes);
+// printf("Root Inode Direct Block[0]: %u\n", retrieved_inode[0].direct[0]);
+// printf("Root Inode CRC: 0x%" PRIx64 "\n", retrieved_inode[0].inode_crc);
+
+
+
+// Create root directory entry
+dirent64_t dir_entries[2]; // "." and ".."
+memset(dir_entries, 0, sizeof(dir_entries));
+
+//"."
+dir_entries[0].inode_no = ROOT_INO;
+dir_entries[0].type = 2; 
+strncpy(dir_entries[0].name, ".", sizeof(dir_entries[0].name) - 1);
+dirent_checksum_finalize(&dir_entries[0]);
+//".."
+dir_entries[1].inode_no = ROOT_INO; 
+dir_entries[1].type = 2; 
+strncpy(dir_entries[1].name, "..", sizeof(dir_entries[1].name) - 1);
+dirent_checksum_finalize(&dir_entries[1]);
+memcpy(image_buffer + superblock.data_region_start * BS, dir_entries, sizeof(dir_entries));
+
+dirent64_t *retrieved_dir_entries = (dirent64_t*)((char*)image_buffer + superblock.data_region_start * BS);
+printf("Directory Entry 0: inode=%u, type=%u, name=%s, checksum=0x%X\n",
+       retrieved_dir_entries[0].inode_no, retrieved_dir_entries[0].type,
+       retrieved_dir_entries[0].name, retrieved_dir_entries[0].checksum);
+printf("Directory Entry 1: inode=%u, type=%u, name=%s, checksum=0x%X\n",
+       retrieved_dir_entries[1].inode_no, retrieved_dir_entries[1].type,
+       retrieved_dir_entries[1].name, retrieved_dir_entries[1].checksum);
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
+if (access("out.img", F_OK) == 0) {
+    fprintf(stderr, "Error: out.img already exists\n");
+    free(image_buffer);
+    exit(1);
+}
 
+FILE *file = fopen("out.img", "wb");
+if (file == NULL) {
+    fprintf(stderr, "Error: Cannot create out.img\n");
+    free(image_buffer);
+    exit(1);
+}
+
+size_t bytes_written = fwrite(image_buffer, 1, total_blocks * BS, file);
+if (bytes_written != total_blocks * BS) {
+    fprintf(stderr, "Error: Failed to write %zu bytes to out.img\n", total_blocks * BS);
+    fclose(file);
+    free(image_buffer);
+    exit(1);
+}
+printf("File system image 'out.img' created successfully with size %d kilobytes\n", input_total_size);
+if (fclose(file) != 0) {
+    fprintf(stderr, "Error: Failed to close out.img\n");
+    free(image_buffer);
+    exit(1);
+}
+
+
+// =========================== DIAGNOSTICS: READ BACK AND VERIFY ===========================
+printf("\n=== RUNNING DIAGNOSTICS: Reading back from file ===\n");
+
+// Allocate buffer for reading back
+uint8_t *read_buffer = malloc(image_size);
+if (!read_buffer) {
+    fprintf(stderr, "Error: Failed to allocate read buffer\n");
+    free(image_buffer);
+    exit(1);
+}
+
+// Read the file back
+FILE *read_file = fopen("out.img", "rb");
+if (!read_file) {
+    fprintf(stderr, "Error: Cannot open out.img for reading\n");
+    free(image_buffer);
+    free(read_buffer);
+    exit(1);
+}
+
+size_t bytes_read = fread(read_buffer, 1, image_size, read_file);
+if (bytes_read != image_size) {
+    fprintf(stderr, "Error: Read %zu bytes, expected %zu\n", bytes_read, image_size);
+    fclose(read_file);
+    free(image_buffer);
+    free(read_buffer);
+    exit(1);
+}
+fclose(read_file);
+
+// Verify superblock from file
+superblock_t *read_sb = (superblock_t*)read_buffer;
+printf("=== Superblock Verification ===\n");
+printf("Magic: 0x%X (expected: 0x4D565346)\n", read_sb->magic);
+printf("Version: %u (expected: 1)\n", read_sb->version);
+printf("Block Size: %u (expected: %u)\n", read_sb->block_size, BS);
+printf("Total Blocks: %" PRIu64 "\n", read_sb->total_blocks);
+printf("Inode Count: %" PRIu64 "\n", read_sb->inode_count);
+printf("Checksum: 0x%X\n", read_sb->checksum);
+
+// Verify bitmaps
+uint8_t *read_inode_bitmap = read_buffer + read_sb->inode_bitmap_start * BS;
+uint8_t *read_data_bitmap = read_buffer + read_sb->data_bitmap_start * BS;
+printf("=== Bitmap Verification ===\n");
+printf("Inode bitmap first byte: 0b%08b\n", read_inode_bitmap[0]);
+printf("Data bitmap first byte: 0b%08b\n", read_data_bitmap[0]);
+
+// Verify root inode
+inode_t *read_inode = (inode_t*)(read_buffer + read_sb->inode_table_start * BS);
+printf("=== Root Inode Verification ===\n");
+printf("Mode: 0%o\n", read_inode[0].mode);
+printf("Links: %u\n", read_inode[0].links);
+printf("Size: %" PRIu64 " bytes\n", read_inode[0].size_bytes);
+printf("Direct Block[0]: %u\n", read_inode[0].direct[0]);
+printf("CRC: 0x%" PRIx64 "\n", read_inode[0].inode_crc);
+
+// Verify directory entries
+dirent64_t *read_dir = (dirent64_t*)(read_buffer + read_sb->data_region_start * BS);
+printf("=== Directory Entries Verification ===\n");
+printf("Entry 0: inode=%u, type=%u, name='%s', checksum=0x%X\n",
+       read_dir[0].inode_no, read_dir[0].type, read_dir[0].name, read_dir[0].checksum);
+printf("Entry 1: inode=%u, type=%u, name='%s', checksum=0x%X\n",
+       read_dir[1].inode_no, read_dir[1].type, read_dir[1].name, read_dir[1].checksum);
+
+// Compare original vs read data
+printf("=== Memory vs File Comparison ===\n");
+if (memcmp(image_buffer, read_buffer, image_size) == 0) {
+    printf("✅ SUCCESS: File data matches original memory buffer!\n");
+} else {
+    printf("❌ ERROR: File data differs from original memory buffer!\n");
+    // Find first difference
+    for (size_t i = 0; i < image_size; i++) {
+        if (image_buffer[i] != read_buffer[i]) {
+            printf("First difference at byte %zu: memory=0x%02X, file=0x%02X\n", 
+                   i, image_buffer[i], read_buffer[i]);
+            break;
+        }
+    }
+}
+
+free(read_buffer);
+printf("=== DIAGNOSTICS COMPLETE ===\n\n");
+
+
+free(image_buffer);
     // THEN CREATE YOUR FILE SYSTEM WITH A ROOT DIRECTORY
     // THEN SAVE THE DATA INSIDE THE OUTPUT IMAGE
     return 0;

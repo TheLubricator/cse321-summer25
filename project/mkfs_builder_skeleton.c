@@ -160,7 +160,7 @@ int CLI_validate(int argc, char *argv[]) {
         printf("invalid format, correct: %s --image <output image> --inode <inode size> --size--kib <block size>\n", argv[0]);
         return 5;
     }
-    else if (strcmp(argv[2],"out.img")!=0) {
+    else if (strstr(argv[2],".img")==NULL) {
         printf("invalid output file name. Must be named out.img.\n");
         return 5;
     }
@@ -325,13 +325,13 @@ printf("Directory Entry 1: inode=%u, type=%u, name=%s, checksum=0x%X\n",
        retrieved_dir_entries[1].name, retrieved_dir_entries[1].checksum);
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
-if (access("out.img", F_OK) == 0) {
+if (access(argv[2], F_OK) == 0) {
     fprintf(stderr, "Error: out.img already exists\n");
     free(image_buffer);
     exit(1);
 }
 
-FILE *file = fopen("out.img", "wb");
+FILE *file = fopen(argv[2], "wb");
 if (file == NULL) {
     fprintf(stderr, "Error: Cannot create out.img\n");
     free(image_buffer);
@@ -365,7 +365,7 @@ if (!read_buffer) {
 }
 
 // Read the file back
-FILE *read_file = fopen("out.img", "rb");
+FILE *read_file = fopen(argv[2], "rb");
 if (!read_file) {
     fprintf(stderr, "Error: Cannot open out.img for reading\n");
     free(image_buffer);

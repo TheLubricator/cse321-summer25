@@ -249,12 +249,43 @@ printf("Data bitmap first byte: 0b%08b\n", read_data_bitmap[0]);
 uint8_t first_free_inode, first_free_data, i, found_inode=0, found_data=0;
 size_t bitmap_bytes = read_sb->inode_bitmap_blocks * BS;
 for (i = 0; i < bitmap_bytes&&!found_inode ; i++) {
-    if (read_inode_bitmap[i] == 0b00000000) {
-        found_inode=1;
-        printf("First free inode at index: %d size of bitmap %d\n", i,bitmap_bytes);
+    if (read_inode_bitmap[0]!=0b11111111){
+        if (i==0){ // to skip root inode
+            for (int bit=1; bit<8;bit++){
+                if ((read_inode_bitmap[i] & (1 << bit))==0){
+                    first_free_inode= bit+1;//say 1 indexed
+                    if (first_free_inode <= read_sb->inode_count) {
+                    found_inode = 1;
+                    read_inode_bitmap[i] |= (1 << bit); // Mark as used
+                     printf("First free inode found at position: %d index=0\n", first_free_inode);
+                    break;
+                   
+                   
+                   
+                }
+            }
+
+        }
     }
-}
-    
+        else{ //rest are assumed empty
+            for (int bit=0; bit<8;bit++){
+                if ((read_inode_bitmap[i] & (1 << bit))==0){
+                    first_free_inode= i*8 + bit+1;//say 1 indexed
+                    if (first_free_inode <= read_sb->inode_count) {
+                    found_inode = 1;
+                    read_inode_bitmap[i] |= (1 << bit); // Mark as used
+                     printf("First free inode found at position: %d index=0\n", first_free_inode);
+                    break;
+                    
+                }
+            }
+        }
+    }
+
+    }
+}    
+printf("current inode bit map 0 valeue %d\n",read_inode_bitmap[0]);
+FILE *txt_file=
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
     // THEN ADD THE SPECIFIED FILE TO YOUR FILE SYSTEM

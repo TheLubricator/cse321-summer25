@@ -326,28 +326,28 @@ printf("Directory Entry 1: inode=%u, type=%u, name=%s, checksum=0x%X\n",
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
 if (access(argv[2], F_OK) == 0) {
-    fprintf(stderr, "Error: out.img already exists\n");
+    printf("Error: out.img already exists\n");
     free(image_buffer);
     exit(1);
 }
 
 FILE *file = fopen(argv[2], "wb");
 if (file == NULL) {
-    fprintf(stderr, "Error: Cannot create out.img\n");
+    printf("Error: Cannot create out.img\n");
     free(image_buffer);
     exit(1);
 }
 
 size_t bytes_written = fwrite(image_buffer, 1, total_blocks * BS, file);
 if (bytes_written != total_blocks * BS) {
-    fprintf(stderr, "Error: Failed to write %zu bytes to out.img\n", total_blocks * BS);
+    printf("Error: Failed to write %zu bytes to out.img\n", total_blocks * BS);
     fclose(file);
     free(image_buffer);
     exit(1);
 }
 printf("File system image 'out.img' created successfully with size %d kilobytes\n", input_total_size);
 if (fclose(file) != 0) {
-    fprintf(stderr, "Error: Failed to close out.img\n");
+    printf("Error: Failed to close out.img\n");
     free(image_buffer);
     exit(1);
 }

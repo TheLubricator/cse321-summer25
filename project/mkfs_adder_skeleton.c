@@ -149,14 +149,19 @@ int CLI_validate(int argc, char *argv[]) {
         printf("file to add does not exist: %s\n", argv[6]);
         return 7;
     }
-    return 0;
-}
+    
+    else if (strcmp(argv[2], argv[4]) == 0) {
+        printf("Error: Input and output image files must be different.\n");
+        return 8;   
 
+    }
+    return 0;
+ }
 int main(int argc, char *argv[]) {
     crc32_init();
-    for (int i = 0; i < argc; i++) {
-        printf("argv[%d] = %s %d\n", i, argv[i],argc);
-    }
+    // for (int i = 0; i < argc; i++) {
+    //     printf("argv[%d] = %s %d\n", i, argv[i],argc);
+    // }
     int ret = CLI_validate(argc, argv);
     if (ret != 0) {
         return ret;
@@ -192,52 +197,53 @@ int main(int argc, char *argv[]) {
     fclose(read_input_img);
 
 
-    superblock_t *read_sb = (superblock_t*)image_buffer ;
-    uint8_t *read_inode_bitmap = image_buffer  + read_sb->inode_bitmap_start * BS;
-    uint8_t *read_data_bitmap = image_buffer  + read_sb->data_bitmap_start * BS;
-    inode_t *read_inode = (inode_t*)(image_buffer + read_sb->inode_table_start * BS);
-    dirent64_t *read_dir = (dirent64_t*)(image_buffer  + read_sb->data_region_start * BS);
+    superblock_t *read_superblock = (superblock_t*)image_buffer ;
+    uint8_t *read_inode_bitmap = image_buffer  + read_superblock->inode_bitmap_start * BS;
+    uint8_t *read_data_bitmap = image_buffer  + read_superblock->data_bitmap_start * BS;
+    inode_t *read_inode_table = (inode_t*)(image_buffer + read_superblock->inode_table_start * BS);
+    dirent64_t *read_directory_entries = (dirent64_t*)(image_buffer  + read_superblock->data_region_start * BS); //root  starts from here ie 0  idx and on wards
+    
 
 printf("=== Superblock Verification ===\n");
-if (read_sb->magic != 0x4D565346) {
-    printf("Error: Invalid magic number: 0x%X\n", read_sb->magic);
+if (read_superblock->magic != 0x4D565346) {
+    printf("Error: Invalid magic number: 0x%X\n", read_superblock->magic);
     free(image_buffer);
     return 12;
 }
-if (read_sb->version != 1) {
-    printf("Error: Unsupported version: %u\n", read_sb->version);
+if (read_superblock->version != 1) {
+    printf("Error: Unsupported version: %u\n", read_superblock->version);
     free(image_buffer);
     return 13;
 }
-if (read_sb->block_size != BS) {
-    printf("Error: Unexpected block size: %u\n", read_sb->block_size);
+if (read_superblock->block_size != BS) {
+    printf("Error: Unexpected block size: %u\n", read_superblock->block_size);
     free(image_buffer);
     return 14;
 }
-printf("Magic: 0x%X (expected: 0x4D565346)\n", read_sb->magic);
-printf("Version: %u (expected: 1)\n", read_sb->version);
-printf("Block Size: %u (expected: %u)\n", read_sb->block_size, BS);
-printf("Total Blocks: %" PRIu64 "\n", read_sb->total_blocks);
-printf("Inode Count: %" PRIu64 "\n", read_sb->inode_count);
-superblock_crc_finalize(read_sb);
-printf("Checksum: 0x%X\n", read_sb->checksum);
+// printf("Magic: 0x%X (expected: 0x4D565346)\n", read_superblock->magic);
+// printf("Version: %u (expected: 1)\n", read_superblock->version);
+// printf("Block Size: %u (expected: %u)\n", read_superblock->block_size, BS);
+// printf("Total Blocks: %" PRIu64 "\n", read_superblock->total_blocks);
+// printf("Inode Count: %" PRIu64 "\n", read_superblock->inode_count);
+// superblock_crc_finalize(read_superblock);
+// printf("Checksum: 0x%X\n", read_superblock->checksum);
 
 // Verify bitmaps
 
-printf("=== Bitmap Verification ===\n");
-printf("Inode bitmap first byte: 0b%08b\n", read_inode_bitmap[0]);
-printf("Data bitmap first byte: 0b%08b\n", read_data_bitmap[0]);
+// printf("=== Bitmap Verification ===\n");
+// printf("Inode bitmap first byte: 0b%08b\n", read_inode_bitmap[0]);
+// printf("Data bitmap first byte: 0b%08b\n", read_data_bitmap[0]);
 
 // // Verify root inode
 
 // printf("=== Root Inode Verification ===\n");
-// printf("Mode: 0%o\n", read_inode[0].mode);
-// printf("Links: %u\n", read_inode[0].links);
-// printf("Size: %" PRIu64 " bytes\n", read_inode[0].size_bytes);
-// printf("Direct Block[0]: %u\n", read_inode[0].direct[0]);
-// inode_crc_finalize(&read_inode[0]);
+// printf("Mode: 0%o\n", read_inode_table[0].mode);
+// printf("Links: %u\n", read_inode_table[0].links);
+// printf("Size: %" PRIu64 " bytes\n", read_inode_table[0].size_bytes);
+// printf("Direct Block[0]: %u\n", read_inode_table[0].direct[0]);
+// inode_crc_finalize(&read_inode_table[0]);
 
-// printf("CRC: 0x%" PRIx64 "\n", read_inode[0].inode_crc);
+// printf("CRC: 0x%" PRIx64 "\n", read_inode_table[0].inode_crc);
 
 // // Verify directory entries
 
@@ -248,14 +254,14 @@ printf("Data bitmap first byte: 0b%08b\n", read_data_bitmap[0]);
 //        read_dir[1].inode_no, read_dir[1].type, read_dir[1].name, read_dir[1].checksum);
 
 uint8_t first_free_inode, first_free_data, i, found_inode=0, found_data=0;
-size_t bitmap_bytes = read_sb->inode_bitmap_blocks * BS;
+size_t bitmap_bytes = read_superblock->inode_bitmap_blocks * BS;
 for (i = 0; i < bitmap_bytes&&!found_inode ; i++) {
     if (read_inode_bitmap[0]!=0b11111111){
         if (i==0){ // to skip root inode
             for (int bit=1; bit<8;bit++){
                 if ((read_inode_bitmap[i] & (1 << bit))==0){
                     first_free_inode= bit+1;//say 1 indexed
-                    if (first_free_inode <= read_sb->inode_count) {
+                    if (first_free_inode <= read_superblock->inode_count) {
                     found_inode = 1;
                     read_inode_bitmap[i] |= (1 << bit); // Mark as used
                      printf("First free inode found at position: %d index=0\n", first_free_inode);
@@ -267,12 +273,12 @@ for (i = 0; i < bitmap_bytes&&!found_inode ; i++) {
             }
 
         }
-    }
+    } //skipping root's   fixed  pos, it iterates from 1 to 7
         else{ //rest are assumed empty
             for (int bit=0; bit<8;bit++){
                 if ((read_inode_bitmap[i] & (1 << bit))==0){
-                    first_free_inode= i*8 + bit+1;//say 1 indexed
-                    if (first_free_inode <= read_sb->inode_count) {
+                    first_free_inode= i*8 + bit+1;//say 1 indexed, since next  bitt  in bitmap is array type, so  i*8+0+1 indicates 8th position and this always returns  correct value
+                    if (first_free_inode <= read_superblock->inode_count) {
                     found_inode = 1;
                     read_inode_bitmap[i] |= (1 << bit); // Mark as used
                      printf("First free inode found at position: %d index=0\n", first_free_inode);
@@ -300,9 +306,162 @@ if (required_blocks > DIRECT_MAX) {
     
     return 15;
 }
+uint32_t data_block_indices[DIRECT_MAX] = {0};
+size_t data_bitmap_bytes = read_superblock->data_bitmap_blocks * BS;
+for (i = 0; i < data_bitmap_bytes && !found_data; i++) {
+    if (read_data_bitmap[i] != 0b11111111) { 
+        if  (i == 0) {// to skip root data block
+            for (int bit = 1; bit < 8; bit++) {
+                if ((read_data_bitmap[i] & (1 << bit)) == 0) {
+                    data_block_indices[found_data] = i * 8 + bit; // 0-indexed
+                    found_data++;
+                    read_data_bitmap[i] |= (1 << bit); // Mark as used
+                    printf("Data block allocated at index: %d\n", data_block_indices[found_data - 1]);
+                    if (found_data == required_blocks) {
+                        break;
+                    }
+                }
+            }
+        } 
+        else { 
+            for (int bit = 0; bit < 8; bit++) {
+                if ((read_data_bitmap[i] & (1 << bit)) == 0) {
+                    data_block_indices[found_data] = i * 8 + bit; // 0-indexed
+                    found_data++;
+                    read_data_bitmap[i] |= (1 << bit); // Mark as used
+                    printf("Data block allocated at index: %d\n", data_block_indices[found_data - 1]);
+                    if (found_data == required_blocks) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+}
+if (found_data < required_blocks) {
+    printf("Error: Not enough free data blocks available\n");
+    free(image_buffer); 
+    return 16;
+}
+inode_t *new_file_inode = &read_inode_table[first_free_inode - 1]; //1 indexing so minus 1
+new_file_inode->mode = (0100000); // file mode
+new_file_inode->links = 1;
+new_file_inode->uid = 0;
+new_file_inode->gid = 0;
+new_file_inode->size_bytes = txt_size;
+new_file_inode->atime = (uint64_t)time(NULL);
+new_file_inode->ctime = (uint64_t)time(NULL);
+new_file_inode->mtime = (uint64_t)time(NULL);
+for (i = 0; i < required_blocks; i++) {
+    new_file_inode->direct[i] = data_block_indices[i];
+}
+new_file_inode->reserved_0 = 0;
+new_file_inode->reserved_1 = 0;
+new_file_inode->reserved_2 = 0;
+new_file_inode->proj_id = 0;
+new_file_inode->uid16_gid16 = 0;
+new_file_inode->xattr_ptr = 0;
+inode_crc_finalize(new_file_inode);
+printf("New file inode created at index %d (1 index) havving size %ld bytes\n", first_free_inode, new_file_inode->size_bytes);
+FILE *txt_file_write = fopen(argv[6], "rb");
+uint8_t block_buffer[BS];
+for (i = 0; i < required_blocks; i++) {
+    memset(block_buffer, 0, BS); // make suring the buffer  is empty
+    //every block usually  will hold full value, but  as we  knnow according to
+    //math , if  is over even by a bit we  have to ceil it, so last block wwill not hold full value,  so every other blocck equal to block  size last  block
+    // will hold remaining bytes
+    size_t read_size_per_block;
+    
+    if (i == required_blocks - 1 && (txt_size % BS) != 0) { 
+        //also added one check if by chance last block is also needed fully
+        read_size_per_block = txt_size % BS;
+    }
+    else{
+        read_size_per_block = BS;
+    }
+    printf("Reading %zu bytes for block %d\n", read_size_per_block, i);
+    // nnow reading  file block by block to to see if its same  as  read_perblock else we cannot write
+    size_t read_bytes_from_file = fread(block_buffer, 1, read_size_per_block, txt_file_write);
+    if (read_bytes_from_file != read_size_per_block) {
+        printf("Error: Read %zu bytes from text file, expected %zu\n", read_bytes_from_file, read_size_per_block);
+        fclose(txt_file_write);
+        free(image_buffer);
+        return 17;
+    }
+
+    uint8_t *data_block_position = image_buffer + (read_superblock->data_region_start + data_block_indices[i]) * BS; //exact position to place dblock, sum of buffer start of dataregion a nd finally dblock index*block size
+    memcpy(data_block_position, block_buffer, BS);
+    printf("Written %zu bytes to data block index %d\n", read_size_per_block, data_block_indices[i]);
+}
+fclose(txt_file_write); // done writing
+// dirrectory entry, with dupoplicate name check
+
+printf("Filename length: %zu\n", strlen(argv[6]));
+if (strlen(argv[6]) > 58) {
+    printf("Error: Filename too long, max 58 characters\n");
+    free(image_buffer);
+    return 18;
+}
+//dup  check
+for (i = 0; i < BS / sizeof(dirent64_t); i++) {
+    if(read_directory_entries[i].inode_no !=0  && (strcmp(read_directory_entries[i].name, argv[6])) == 0) {
+        printf("Error: Duplicate filename found in root directory: %s\n", argv[6]);
+        free(image_buffer);
+        return 19;
+    }
+}
+int first_free_directory_index = -1; //if unchanged then  non space
+for (i = 0; i < BS / sizeof(dirent64_t); i++) {
+    if (read_directory_entries[i].inode_no == 0) { // free entry found
+        first_free_directory_index = i;
+        break;
+    }
+}
+if (first_free_directory_index == -1) {
+    printf("Error: No free directory entries available in root directory\n");
+    free(image_buffer);
+    return 20;
+}
+//finally new entrey
+dirent64_t *new_file_entry = &read_directory_entries[first_free_directory_index];
+new_file_entry->inode_no = first_free_inode;
+new_file_entry->type = 1; // file so
+strncpy(new_file_entry->name, argv[6], 58); //name[58]
+new_file_entry->name[57] = '\0'; //null tterminate
+dirent_checksum_finalize(new_file_entry);
+//root  directory inode update
+read_inode_table[0].links += 1; // lniks mean count so count up
+read_inode_table[0].mtime = (uint64_t)time(NULL); // cchange modificcation t ime
+read_inode_table[0].size_bytes += sizeof(dirent64_t); //sizoe up by direcotry entry size
+inode_crc_finalize(&read_inode_table[0]);
+
+//superblock  modification timem and crc
+read_superblock->mtime_epoch = (uint64_t)time(NULL);
+superblock_crc_finalize(read_superblock);
+
+
+// write to  output image
+FILE *write_output_img = fopen(argv[4], "wb");
+if (!write_output_img) {
+    printf("Error: Cannot open output image for writing\n");
+    free(image_buffer);
+    return 21;
+}
+size_t bytes_tobe_written = fwrite(image_buffer, 1, image_size, write_output_img);
+if (bytes_tobe_written != image_size) {
+    printf("Error: Wrote %zu bytes to output image, expected %zu\n", bytes_tobe_written, image_size);
+    fclose(write_output_img);
+    free(image_buffer);
+    return 22;
+}
+fclose(write_output_img);
+free(image_buffer);
+printf("File '%s' added successfully to image '%s'\n", argv[6], argv[4]);
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
     // THEN ADD THE SPECIFIED FILE TO YOUR FILE SYSTEM
     // UPDATE THE .IMG FILE ON DISK
     return 0;
 }
+

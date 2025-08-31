@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <unistd.h>
+#include<math.h>
 
 #define BS 4096u
 #define INODE_SIZE 128u
@@ -165,7 +166,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Cannot open input image for reading\n");
         return 8;
     }
-    fseeko(file_size, 0, SEEK_END);
+    fseek(file_size, 0, SEEK_END);
     size_t image_size = ftell(file_size);
     fclose(file_size);
     printf("Input image size: %zu bytes\n", image_size);
@@ -285,7 +286,20 @@ for (i = 0; i < bitmap_bytes&&!found_inode ; i++) {
     }
 }    
 printf("current inode bit map 0 valeue %d\n",read_inode_bitmap[0]);
-FILE *txt_file=
+FILE *txt_file=fopen(argv[6],"r");
+fseek(txt_file,0,SEEK_END);
+size_t txt_size=ftell(txt_file);
+fclose(txt_file);
+printf("File size is %ld bytes\n",txt_size);
+// Integer ceiling division: (a + b - 1) / b
+int required_blocks = (txt_size + BS - 1) / BS;
+printf("Required blocks: %d\n", required_blocks);
+if (required_blocks > DIRECT_MAX) {
+    printf("Error: File too large to add, requires more than %d direct blocks\n", DIRECT_MAX);
+    free(image_buffer);
+    
+    return 15;
+}
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
     // THEN ADD THE SPECIFIED FILE TO YOUR FILE SYSTEM

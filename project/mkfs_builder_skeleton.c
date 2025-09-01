@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define BS 4096u               // block size
 #define INODE_SIZE 128u
@@ -331,27 +332,25 @@ if (access(argv[2], F_OK) == 0) {
     exit(1);
 }
 
-FILE *file = fopen(argv[2], "wb");
-if (file == NULL) {
-    printf("Error: Cannot create out.img\n");
-    free(image_buffer);
-    exit(1);
-}
+// FILE *file = fopen(argv[2], "wb");
+int fd = open(argv[2], O_CREAT | O_EXCL | O_WRONLY, 0644);
+// if (file == NULL) {
+//     printf("Error: Cannot create out.img\n");
+//     free(image_buffer);
+//     exit(1);
+// }
 
-size_t bytes_written = fwrite(image_buffer, 1, total_blocks * BS, file);
-if (bytes_written != total_blocks * BS) {
-    printf("Error: Failed to write %zu bytes to out.img\n", total_blocks * BS);
-    fclose(file);
-    free(image_buffer);
-    exit(1);
-}
-printf("File system image 'out.img' created successfully with size %d kilobytes\n", input_total_size);
-if (fclose(file) != 0) {
-    printf("Error: Failed to close out.img\n");
-    free(image_buffer);
-    exit(1);
-}
+// size_t bytes_written = fwrite(image_buffer, 1, total_blocks * BS, file);
 
+write(fd, image_buffer, image_size);
+// printf("File system image 'out.img' created successfully with size %d kilobytes\n", input_total_size);
+// if (fclose(file) != 0) {
+//     printf("Error: Failed to close out.img\n");
+//     free(image_buffer);
+//     exit(1);
+// }
+
+close(fd);
 
 // =========================== DIAGNOSTICS: READ BACK AND VERIFY ===========================
 printf("\n=== RUNNING DIAGNOSTICS: Reading back from file ===\n");

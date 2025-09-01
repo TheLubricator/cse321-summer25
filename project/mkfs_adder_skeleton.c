@@ -433,7 +433,9 @@ new_file_entry->name[57] = '\0'; //null tterminate
 dirent_checksum_finalize(new_file_entry);
 //root  directory inode update
 read_inode_table[0].links += 1; // lniks mean count so count up
-read_inode_table[0].mtime = (uint64_t)time(NULL); // cchange modificcation t ime
+read_inode_table[0].mtime = (uint64_t)time(NULL); 
+read_inode_table[0].atime = (uint64_t)time(NULL);
+// cchange modificcation t ime
 read_inode_table[0].size_bytes += sizeof(dirent64_t); //sizoe up by direcotry entry size
 inode_crc_finalize(&read_inode_table[0]);
 

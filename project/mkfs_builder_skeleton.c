@@ -15,7 +15,7 @@
 #define INODE_SIZE 128u
 #define ROOT_INO 1u
 
-uint64_t g_random_seed = 0; // This should be replaced by seed value from the CLI.
+uint64_t g_random_seed = srand(time(NULL)); // This should be replaced by seed value from the CLI.
 
 // below contains some basic structures you need for your project
 // you are free to create more structures as you require
@@ -187,6 +187,7 @@ int main(int argc, char *argv[]) {
     // for (int i = 0; i < argc; i++) {
     //     printf("argv[%d] = %s %d\n", i, argv[i],argc);
     // }
+    
     int ret = CLI_validate(argc, argv);
     if (ret != 0) {
         return ret;
@@ -275,8 +276,8 @@ inode_t inode_table[superblock.inode_count];
 memset(inode_table, 0, superblock.inode_count*INODE_SIZE);
 inode_table[0].mode = (0040000); 
 inode_table[0].links = 2;
-inode_table[0].uid = 0;
-inode_table[0].gid = 0;
+inode_table[0].uid = rand();
+inode_table[0].gid = rand();
 inode_table[0].size_bytes = 128;
 inode_table[0].atime = (uint64_t)time(NULL);
 inode_table[0].ctime = (uint64_t)time(NULL);

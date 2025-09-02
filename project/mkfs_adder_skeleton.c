@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include<math.h>
+#include <fcntl.h>
 
 #define BS 4096u
 #define INODE_SIZE 128u
@@ -432,7 +433,9 @@ new_file_entry->name[57] = '\0'; //null tterminate
 dirent_checksum_finalize(new_file_entry);
 //root  directory inode update
 read_inode_table[0].links += 1; // lniks mean count so count up
-read_inode_table[0].mtime = (uint64_t)time(NULL); // cchange modificcation t ime
+read_inode_table[0].mtime = (uint64_t)time(NULL); 
+read_inode_table[0].atime = (uint64_t)time(NULL);
+// cchange modificcation t ime
 read_inode_table[0].size_bytes += sizeof(dirent64_t); //sizoe up by direcotry entry size
 inode_crc_finalize(&read_inode_table[0]);
 
@@ -442,20 +445,11 @@ superblock_crc_finalize(read_superblock);
 
 
 // write to  output image
-FILE *write_output_img = fopen(argv[4], "wb");
-if (!write_output_img) {
-    printf("Error: Cannot open output image for writing\n");
-    free(image_buffer);
-    return 21;
-}
-size_t bytes_tobe_written = fwrite(image_buffer, 1, image_size, write_output_img);
-if (bytes_tobe_written != image_size) {
-    printf("Error: Wrote %zu bytes to output image, expected %zu\n", bytes_tobe_written, image_size);
-    fclose(write_output_img);
-    free(image_buffer);
-    return 22;
-}
-fclose(write_output_img);
+int fd = open(argv[4], O_CREAT | O_EXCL | O_WRONLY, 0644);
+write(fd, image_buffer, image_size);
+close(fd);
+
+
 free(image_buffer);
 printf("File '%s' added successfully to image '%s'\n", argv[6], argv[4]);
     // WRITE YOUR DRIVER CODE HERE

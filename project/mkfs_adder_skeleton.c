@@ -131,7 +131,7 @@ void dirent_checksum_finalize(dirent64_t* de) {
 
 int CLI_validate(int argc, char *argv[]) {
     if (argc != 7) {
-        printf("invalid CLI format, correct: %s --input <input image> --output <output image> --file <filename txt>\n");
+        printf("invalid CLI format, correct: %s --input <input image> --output <output image> --file <filename txt>\n",argv[0]);
         return 5;
     }
     else if (strstr(argv[4],".img")==NULL) {
@@ -156,6 +156,10 @@ int CLI_validate(int argc, char *argv[]) {
         return 8;   
 
     }
+    else if(access(argv[4], F_OK) == 0) {
+        printf("Error: output image already exists: %s\n", argv[4]);
+        return 9;
+    }
     return 0;
  }
 int main(int argc, char *argv[]) {
@@ -169,7 +173,7 @@ int main(int argc, char *argv[]) {
     }
     FILE *file_size = fopen(argv[2], "r");
     if (!file_size) {
-        fprintf(stderr, "Error: Cannot open input image for reading\n");
+        printf("Error: Cannot open input image for reading\n");
         return 8;
     }
     fseek(file_size, 0, SEEK_END);
@@ -360,7 +364,7 @@ for (i = 0; i < required_blocks; i++) {
 new_file_inode->reserved_0 = 0;
 new_file_inode->reserved_1 = 0;
 new_file_inode->reserved_2 = 0;
-new_file_inode->proj_id = 0;
+new_file_inode->proj_id = 2;
 new_file_inode->uid16_gid16 = 0;
 new_file_inode->xattr_ptr = 0;
 inode_crc_finalize(new_file_inode);

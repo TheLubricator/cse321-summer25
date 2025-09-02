@@ -30,7 +30,7 @@ typedef struct {
     uint32_t block_size;
     uint64_t total_blocks;  
     uint64_t inode_count;
-    uint64_t inode_bitmap_start;
+    uint64_t inode_bitmap_start; //
     uint64_t inode_bitmap_blocks;
     uint64_t data_bitmap_start;
     uint64_t data_bitmap_blocks;
@@ -137,6 +137,7 @@ void dirent_checksum_finalize(dirent64_t* de) {
     for (int i = 0; i < 63; i++) x ^= p[i];   // covers ino(4) + type(1) + name(58)
     de->checksum = x;
 }
+
 int convert_to_int(char *str, int *result) {
     char *endptr;
     errno = 0;
@@ -158,11 +159,11 @@ int convert_to_int(char *str, int *result) {
 
 int CLI_validate(int argc, char *argv[]) {
     if (argc != 7) {
-        printf("invalid format, correct: %s --image <output image> --inode <inode size> --size--kib <block size>\n", argv[0]);
+        printf("invalid format, correct: %s --image <output image> --inode <inode size> --size-kib <block size>\n", argv[0]);
         return 5;
     }
     else if (strstr(argv[2],".img")==NULL) {
-        printf("invalid output file name. Must be named out.img.\n");
+        printf("invalid output file name. Must be named n.img.\n");
         return 5;
     }
     else if (strcmp(argv[1],"--image")!=0 || strcmp(argv[3],"--inode")!=0 || strcmp(argv[5],"--size-kib")!=0) {
@@ -212,7 +213,7 @@ int main(int argc, char *argv[]) {
 dirent64_t dirent;
 
 /* proper configuration of the structures */
-uint64_t total_blocks = (input_total_size * 1024) / BS; 
+uint64_t total_blocks = ((input_total_size * 1024)+BS-1) / BS; 
 size_t image_size = input_total_size * 1024; // img size  in byetts
 uint8_t *image_buffer = malloc(image_size); // Allocate memory for the entire image
 if (!image_buffer) {
@@ -234,7 +235,7 @@ superblock.inode_bitmap_blocks=1;
 superblock.data_bitmap_start=2;
 superblock.data_bitmap_blocks=1;
 superblock.inode_table_start=3;
-superblock.inode_table_blocks=(input_inode_size*INODE_SIZE)/BS;
+superblock.inode_table_blocks=(input_inode_size*INODE_SIZE+BS-1)/BS;
 superblock.data_region_start=superblock.inode_table_start+superblock.inode_table_blocks;
 superblock.data_region_blocks=total_blocks-superblock.data_region_start;
 superblock.root_inode=ROOT_INO;

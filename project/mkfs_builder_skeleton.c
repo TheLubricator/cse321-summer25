@@ -16,7 +16,7 @@
 #define INODE_SIZE 128u
 #define ROOT_INO 1u
 
-uint64_t g_random_seed = srand(time(NULL)); // This should be replaced by seed value from the CLI.
+uint64_t g_random_seed = 0; // This should be replaced by seed value from the CLI.
 
 // below contains some basic structures you need for your project
 // you are free to create more structures as you require

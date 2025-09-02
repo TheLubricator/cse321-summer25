@@ -392,7 +392,7 @@ for (i = 0; i < required_blocks; i++) {
     }
 
     uint8_t *data_block_position = image_buffer + (read_superblock->data_region_start + data_block_indices[i]) * BS; //exact position to place dblock, sum of buffer start of dataregion a nd finally dblock index*block size
-    memcpy(data_block_position, block_buffer, BS);
+    memcpy(data_block_position, block_buffer, read_size_per_block);
     printf("Written %zu bytes to data block index %d\n", read_size_per_block, data_block_indices[i]);
 }
 fclose(txt_file_write); // done writing

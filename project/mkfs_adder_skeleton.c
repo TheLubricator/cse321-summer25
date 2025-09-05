@@ -134,10 +134,17 @@ int CLI_validate(int argc, char *argv[]) {
         printf("invalid CLI format, correct: %s --input <input image> --output <output image> --file <filename txt>\n",argv[0]);
         return 5;
     }
-    else if (strstr(argv[4],".img")==NULL) {
-        printf("invalid output image format. Must be in .img format.\n");
-        return 5;
-    }
+
+
+    const char *ext = ".img";
+    size_t len = strlen(argv[4]);
+    size_t ext_len = strlen(ext);
+if (len < ext_len || strcmp(argv[4] + len - ext_len, ext) != 0) {
+    printf("invalid output file name. Must end with .img\n");
+    return 5;
+}
+
+
     else if (strcmp(argv[1],"--input")!=0 || strcmp(argv[3],"--output")!=0 || strcmp(argv[5],"--file")!=0) {
         printf("invalid CLI format, correct: %s --input <input image> --output <output image> --file <filename txt>\n");
         return 5;

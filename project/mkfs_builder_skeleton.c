@@ -162,10 +162,15 @@ int CLI_validate(int argc, char *argv[]) {
         printf("invalid format, correct: %s --image <output image> --inode <inode size> --size-kib <block size>\n", argv[0]);
         return 5;
     }
-    else if (strstr(argv[2],".img")==NULL) {
-        printf("invalid output file name. Must be named n.img.\n");
-        return 5;
-    }
+
+    const char *ext = ".img";
+    size_t len = strlen(argv[2]);
+    size_t ext_len = strlen(ext);
+if (len < ext_len || strcmp(argv[2] + len - ext_len, ext) != 0) {
+    printf("invalid output file name. Must end with .img\n");
+    return 5;
+}
+
     else if (strcmp(argv[1],"--image")!=0 || strcmp(argv[3],"--inode")!=0 || strcmp(argv[5],"--size-kib")!=0) {
         printf("invalid format, correct: %s --image <output image> --inode <inode size> --size-kib <block size>\n", argv[0]);
         return 5;
@@ -253,6 +258,7 @@ memcpy(image_buffer+0*BS, &superblock, sizeof(superblock_t));
 // printf("Superblock Total Blocks: %" PRIu64 "\n", retrieved1->total_blocks);
 // printf("Superblock Inode Count: %" PRIu64 "\n", retrieved1->inode_count);
 // printf("Superblock Checksum: 0x%X\n", retrieved1->checksum);
+
 //Allocate inode bitmap  block 1
 uint8_t inode_bitmap[BS];
 memset(inode_bitmap, 0, BS);

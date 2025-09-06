@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
     dirent64_t *read_directory_entries = (dirent64_t*)(image_buffer  + read_superblock->data_region_start * BS); //root  starts from here ie 0  idx and on wards
     
 
-printf("=== Superblock Verification ===\n");
+// printf("=== Superblock Verification ===\n");
 if (read_superblock->magic != 0x4D565346) {
     printf("Error: Invalid magic number: 0x%X\n", read_superblock->magic);
     free(image_buffer);
@@ -418,7 +418,7 @@ if (strlen(argv[6]) > 58) {
 //dup  check
 for (i = 0; i < BS / sizeof(dirent64_t); i++) {
     if(read_directory_entries[i].inode_no !=0  && (strcmp(read_directory_entries[i].name, argv[6])) == 0) {
-        printf("Error: Duplicate filename found in root directory: %s\n", argv[6]);
+        printf("Error: Duplicate filename found in root directory: %s. Reverting changes...\n", argv[6]);
         free(image_buffer);
         return 19;
     }

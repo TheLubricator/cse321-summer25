@@ -326,12 +326,12 @@ dirent_checksum_finalize(&dir_entries[1]);
 memcpy(image_buffer + superblock.data_region_start * BS, dir_entries, sizeof(dir_entries));
 
 dirent64_t *retrieved_dir_entries = (dirent64_t*)((char*)image_buffer + superblock.data_region_start * BS);
-printf("Directory Entry 0: inode=%u, type=%u, name=%s, checksum=0x%X\n",
-       retrieved_dir_entries[0].inode_no, retrieved_dir_entries[0].type,
-       retrieved_dir_entries[0].name, retrieved_dir_entries[0].checksum);
-printf("Directory Entry 1: inode=%u, type=%u, name=%s, checksum=0x%X\n",
-       retrieved_dir_entries[1].inode_no, retrieved_dir_entries[1].type,
-       retrieved_dir_entries[1].name, retrieved_dir_entries[1].checksum);
+// printf("Directory Entry 0: inode=%u, type=%u, name=%s, checksum=0x%X\n",
+//        retrieved_dir_entries[0].inode_no, retrieved_dir_entries[0].type,
+//        retrieved_dir_entries[0].name, retrieved_dir_entries[0].checksum);
+// printf("Directory Entry 1: inode=%u, type=%u, name=%s, checksum=0x%X\n",
+//        retrieved_dir_entries[1].inode_no, retrieved_dir_entries[1].type,
+//        retrieved_dir_entries[1].name, retrieved_dir_entries[1].checksum);
     // WRITE YOUR DRIVER CODE HERE
     // PARSE YOUR CLI PARAMETERS
 if (access(argv[2], F_OK) == 0) {
@@ -427,9 +427,9 @@ printf("Entry 1: inode=%u, type=%u, name='%s', checksum=0x%X\n",
 // Compare original vs read data
 printf("=== Memory vs File Comparison ===\n");
 if (memcmp(image_buffer, read_buffer, image_size) == 0) {
-    printf("✅ SUCCESS: File data matches original memory buffer!\n");
+    printf("SUCCESS: File data matches original memory buffer!\n");
 } else {
-    printf("❌ ERROR: File data differs from original memory buffer!\n");
+    printf("ERROR: File data differs from original memory buffer!\n");
     // Find first difference
     for (size_t i = 0; i < image_size; i++) {
         if (image_buffer[i] != read_buffer[i]) {

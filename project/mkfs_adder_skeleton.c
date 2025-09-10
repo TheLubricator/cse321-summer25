@@ -268,7 +268,7 @@ if (read_superblock->block_size != BS) {
 uint8_t first_free_inode, first_free_data, i, found_inode=0, found_data=0;
 size_t bitmap_bytes = read_superblock->inode_bitmap_blocks * BS;
 for (i = 0; i < bitmap_bytes&&!found_inode ; i++) {
-    if (read_inode_bitmap[0]!=0b11111111){
+    if (read_inode_bitmap[i]!=0b11111111){
         if (i==0){ // to skip root inode
             for (int bit=1; bit<8;bit++){
                 if ((read_inode_bitmap[i] & (1 << bit))==0){
